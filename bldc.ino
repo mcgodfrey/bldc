@@ -61,26 +61,20 @@
 
 #include "menu.h"
 #include "constants.h"
+#include "pwm.h"
+#include "timer1.h"
+#include "motor.h"
+
 
 Motor mot;
 MenuSystem m;
 byte pwm_out;
-byte commutation_state;
-unsigned int speed_delay;
 
 byte analog_inputs[] = {VM1, VM2, VM3, I1, I2};
 byte current_adc_input;
 int adc_vals[NUM_ADC_INPUTS];
 
-
-void set_duty_cycle(byte dc) {
-  OCR0A = dc;
-  OCR0B = dc;
-  OCR2A = dc;
-}
-
-
-
+byte debug_led_state;
 
 void setup_pins() {
   //Set the PWM output pins
@@ -98,27 +92,9 @@ void setup_pins() {
   pinMode(VM3, INPUT);
   pinMode(I1, INPUT);
   pinMode(I2, INPUT);
-}
 
-/*
- * Timer1 is used for phase timing and ADC trigger timing
- * 16MHz clock
- * 16 bit timer
- * prescaler = 16 -> 1 timer count = 1us
- * -> overflow in 2^16us = 65.5ms
- * prescaler = 256 -> 1.04s overflow
- */
-void setup_timer_1(){
-  TCCR1A = 0;   //no PWM, normal mode
-  TCCR1B = TIMER1_PRESCALER_MASK;
-  TCCR1C = 0;   //unused
-  TCNT1H = 0;   //timer initially 0
-  TCNT1L = 0;   //timer initially 0
-  OCR1AH = speed_delay >> 8;        //initial timer is the default speed_delay
-  OCR1AL = speed_delay & 0x00FF;    //initial timer is the default speed_delay
-  OCR1BH = ADC_DELAY >> 8;        //initial timer is the default speed_delay
-  OCR1BL = ADC_DELAY & 0x00FF;    //initial timer is the default speed_delay
-  TIMSK1 = _BV(OCIE1A) | _BV(OCIE1B); //interrupt on output comprae A and B match
+  //debugging
+  pinMode(LED_BUILTIN, OUTPUT);
 }
 
 
@@ -137,70 +113,22 @@ ISR(TIMER1_COMPB_vect){
 
 
 /* Timer1 overflow should increment the global timer1_overflow variable
- * Turns by 16bit timer into a 32bit counter
+ * Turns my 16bit timer into a 32bit counter
  */
 ISR(TIMER1_OVF_vect){
   timer1_overflow++;
+  debug_led_state = (debug_led_state+1)%2;
+  digitalWrite(LED_BUILTIN, debug_led_state);
 }
 
 
 ISR(TIMER1_COMPA_vect){
   //set up the new interrupt output compare register value
-  OCR1A = TCNT1 + speed_delay;
-
+  OCR1A = TCNT1 + TIMER1_DELAY;
   //update the commutation
-  commutation_state = (commutation_state+1)%6;
-  switch(commutation_state){
-    case 0:
-      start_pwm(EN1);
-      stop_pwm(EN2);
-      stop_pwm(EN3);
-      digitalWrite(IN1, HIGH);
-      digitalWrite(IN2, LOW);
-      digitalWrite(IN3, LOW);
-      break;
-    case 1:
-      start_pwm(EN1);
-      stop_pwm(EN2);
-      stop_pwm(EN3);
-      digitalWrite(IN1, LOW);
-      digitalWrite(IN2, HIGH);
-      digitalWrite(IN3, LOW);
-      break;
-    case 2:
-      stop_pwm(EN1);
-      start_pwm(EN2);
-      stop_pwm(EN3);
-      digitalWrite(IN1, LOW);
-      digitalWrite(IN2, HIGH);
-      digitalWrite(IN3, LOW);
-      break;
-    case 3:
-      stop_pwm(EN1);
-      start_pwm(EN2);
-      stop_pwm(EN3);
-      digitalWrite(IN1, LOW);
-      digitalWrite(IN2, LOW);
-      digitalWrite(IN3, HIGH);
-      break;
-    case 4:
-      stop_pwm(EN1);
-      stop_pwm(EN2);
-      start_pwm(EN3);
-      digitalWrite(IN1, LOW);
-      digitalWrite(IN2, LOW);
-      digitalWrite(IN3, HIGH);
-      break;
-    case 5:
-      stop_pwm(EN1);
-      stop_pwm(EN2);
-      start_pwm(EN3);
-      digitalWrite(IN1, HIGH);
-      digitalWrite(IN2, LOW);
-      digitalWrite(IN3, LOW);
-     break;
-  }
+  mot.check_commutation();
 }
+
 
 /* ADC convers complete interrupt
  * saves the value into the adc_vals array
@@ -221,68 +149,17 @@ inline void trigger_adc(byte channel){
 
 
 void setup_adc(){
-  //initialise the adc_vals to something recognisable
-  for(byte i = 0; i < NUM_ADC_INPUTS; i++) {
-    adc_vals[i] = i*10;
-  }
+  current_adc_input = 0;
   ADMUX = _BV(REFS0);               //AVCC reference, right justified result, default input mux 0
   //enable ADC and set prescaler to 128 (16MHz/128 = 125kHz / 13 ~ 9615Hz = 104us
   ADCSRA = _BV(ADEN) | _BV(ADPS2) | _BV(ADPS1) | _BV(ADPS0);
   ADCSRB = 0;                       //comparator disabled, auto-trigger source set to 0
   
   //The first conversion takes longer than normal, so trigger a conversion now
-  trigger_adc(0);
+  trigger_adc(current_adc_input);
   while (!(ADCSRA & _BV(ADIF))){ }  //wait until the ADIF bit is set
   ADCSRA &= ~_BV(ADIF);             //clear the ADIF bit
   ADCSRA |= _BV(ADIE);              //enable the interrupt now that the first conversion is finished
-}
-
-
-/* Set up Timer0 and Timer2 as phase correct PWM outputs
- * Maximum frequency (~32KHz)
- * All PWM outputs initially disabled
- */
-void setup_pwm() {
-  TCCR0A = _BV(WGM00);              //phase correct pwm. Initially both pwm outputs disabled
-  TCCR2A = _BV(WGM20);
-  TCCR0B = _BV(CS00);               //clock prescaler = 1 -> 16MHz/(2**8)/2 = 32KHz
-  TCCR2B = _BV(CS20);
-  TCNT0 = 0;                        //reset the timers
-  TCNT2 = 0;                        //reset the timers
-
-}
-
-
-/* Start PWM output on a given pin (EN1, EN2 or EN3)
- * must be called once for each pin you want to start
- * setup_pwm() must be called first
- */
-void start_pwm(byte pin){
-  if(pin == EN1){
-    TCCR2A |= _BV(COM2A1);
-  }else if(pin == EN2){
-    TCCR0A |= _BV(COM0A1);
-  }else if(pin == EN3){
-    TCCR0A |= _BV(COM0B1);
-  }
-}
-
-
-/* Stop PWM output on a given pin (EN1, EN2 or EN3) and set it to LOW
- * must be called once for each pin you want to start
- * setup_pwm() must be called first
- */
-void stop_pwm(byte pin){
-  if(pin == EN1){
-    TCCR2A &= ~(_BV(COM2A1));
-    digitalWrite(EN1, LOW);
-  }else if(pin == EN2){
-    TCCR0A &= ~(_BV(COM0A1));
-    digitalWrite(EN2, LOW);
-  }else if(pin == EN3){
-    TCCR0A &= ~(_BV(COM0B1));
-    digitalWrite(EN3, LOW);
-  }
 }
 
 
@@ -302,18 +179,14 @@ void setup_menu(){
  * perform inital pin setup, etc. before passing on to main loop()
  */
 void setup(){
+  debug_led_state = 0;
   Serial.begin(9600);
-
-
-  commutation_state = 0;
-  current_adc_input = 0;
 
   setup_menu();
   setup_pins();
   setup_adc();
   setup_pwm();
   set_duty_cycle(20);
-  speed_delay = 30000;
   setup_timer_1();
 
 }
@@ -337,34 +210,43 @@ void loop() {
 /*
  * UI Callbacks
  */
+unsigned long speed_inc = 1000;
 void speedUp() {
-  if (speed_delay < 20000) {
-    speed_delay = 10000;
-  } else {
-    speed_delay -= 10000;
-  }
   Serial.println("Increasing the speed!!!");
+  unsigned long t = mot.get_target_phase_time();
+  Serial.print("Old phase time = "); Serial.println(t);
+  if(t < speed_inc){
+    t = 0;
+  }else{
+    t -= speed_inc;
+  }
+  mot.set_target_phase_time(t);
   Serial.print("Speed = ");
-  Serial.println(speed_delay);
+  Serial.println(t);
 }
 
 void slowDown() {
-  if (speed_delay >  50000) {
-    speed_delay = 60000;
-  } else {
-    speed_delay += 10000;
-  }
   Serial.println("Slowing down...");
+  unsigned long t = mot.get_target_phase_time();
+  Serial.print("Old phase time = "); Serial.println(t);
+  if(t > 1000000000-speed_inc){
+    t = 1000000000;
+  }else{
+    t += speed_inc;
+  }
+  mot.set_target_phase_time(t);
   Serial.print("Speed = ");
-  Serial.println(speed_delay);
+  Serial.println(t);
 }
 
 void start_motor() {
   Serial.println("Starting up!");
+  mot.start();
 }
 
 void stop_motor() {
   Serial.println("Stopping the motor");
+  mot.stop();
 }
 
 void display_help() {
