@@ -198,7 +198,7 @@ void setup(){
   setup_pins();
   setup_adc();
   setup_pwm();
-  set_duty_cycle(20);
+  set_duty_cycle(100);
   setup_timer_1();
 
 }
@@ -241,8 +241,8 @@ void speedUp() {
   Serial.println("Increasing the speed!!!");
   unsigned long t = mot.get_target_phase_time();
   Serial.print("Old phase time = "); Serial.println(t);
-  if(t < speed_inc){
-    t = 0;
+  if(t < 2*speed_inc){
+    t = speed_inc;
   }else{
     t -= speed_inc;
   }

@@ -12,7 +12,7 @@ void Motor::start(){
   state = ON;
   commutation_state = 0;
   target_speed = 0;
-  target_phase_time = 0;
+  target_phase_time = 10000;
   direction = FORWARD;
   digitalWrite(EN_GATE, HIGH);
   check_commutation();

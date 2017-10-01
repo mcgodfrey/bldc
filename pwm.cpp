@@ -18,7 +18,15 @@ void setup_pwm() {
   TCCR2B = _BV(CS20);
   TCNT0 = 0;                        //reset the timers
   TCNT2 = 0;                        //reset the timers
+  //DEBUG set overflow interrupt flag
+  //TIMSK2 = _BV(TOIE2);
 }
+
+//Debug
+//ISR(TIMER2_OVF_vect){
+//  digitalWrite(LED_BUILTIN, HIGH);
+//}
+
 
 
 /* Start PWM output on a given pin (INH_A, INH_B, INH_C)

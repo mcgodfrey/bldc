@@ -14,12 +14,12 @@
  *****/
 //Digital outputs
 #define EN_GATE 10
-#define INH_A 9
-#define INH_B 8
-#define INH_C 7
-#define INL_A 11
-#define INL_B 6
-#define INL_C 5
+#define INH_A 11
+#define INH_B 6
+#define INH_C 5
+#define INL_A 9
+#define INL_B 8
+#define INL_C 7
 //Digital inputs
 #define nOCTW 2
 #define nFAULT 3
