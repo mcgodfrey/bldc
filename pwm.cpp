@@ -21,16 +21,16 @@ void setup_pwm() {
 }
 
 
-/* Start PWM output on a given pin (EN1, EN2 or EN3)
+/* Start PWM output on a given pin (INH_A, INH_B, INH_C)
  * must be called once for each pin you want to start
  * setup_pwm() must be called first
  */
 void start_pwm(byte pin){
-  if(pin == EN1){
+  if(pin == INH_A){
     TCCR2A |= _BV(COM2A1);
-  }else if(pin == EN2){
+  }else if(pin == INH_B){
     TCCR0A |= _BV(COM0A1);
-  }else if(pin == EN3){
+  }else if(pin == INH_C){
     TCCR0A |= _BV(COM0B1);
   }
 }
@@ -41,16 +41,14 @@ void start_pwm(byte pin){
  * setup_pwm() must be called first
  */
 void stop_pwm(byte pin){
-  if(pin == EN1){
+  if(pin == INH_A){
     TCCR2A &= ~(_BV(COM2A1));
-    digitalWrite(EN1, LOW);
-  }else if(pin == EN2){
+    digitalWrite(INH_A, LOW);
+  }else if(pin == INH_B){
     TCCR0A &= ~(_BV(COM0A1));
-    digitalWrite(EN2, LOW);
-  }else if(pin == EN3){
+    digitalWrite(INH_B, LOW);
+  }else if(pin == INH_C){
     TCCR0A &= ~(_BV(COM0B1));
-    digitalWrite(EN3, LOW);
+    digitalWrite(INH_C, LOW);
   }
 }
-
-

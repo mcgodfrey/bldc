@@ -30,7 +30,7 @@
 #define VC 3
 #define SO1 4
 #define SO2 5
-#define NUM_ADC_INPUTS 5
+#define NUM_ADC_INPUTS 6
 
 
 //Timer1 settings

@@ -70,28 +70,35 @@ Motor mot;
 MenuSystem m;
 byte pwm_out;
 
-byte analog_inputs[] = {VM1, VM2, VM3, I1, I2};
+byte analog_inputs[] = {VIN, VA, VB, VC, SO1, SO2};
 byte current_adc_input;
 int adc_vals[NUM_ADC_INPUTS];
 
 byte debug_led_state;
+byte print_adc;
 
 void setup_pins() {
   //Set the PWM output pins
-  pinMode(EN1, OUTPUT);
-  pinMode(EN2, OUTPUT);
-  pinMode(EN3, OUTPUT);
+  pinMode(INH_A, OUTPUT);
+  pinMode(INH_B, OUTPUT);
+  pinMode(INH_C, OUTPUT);
   //And the LOW output pins
-  pinMode(IN1, OUTPUT);
-  pinMode(IN2, OUTPUT);
-  pinMode(IN3, OUTPUT);
+  pinMode(INL_A, OUTPUT);
+  pinMode(INL_B, OUTPUT);
+  pinMode(INL_C, OUTPUT);
+
+  //setup the digital IO
+  pinMode(EN_GATE, OUTPUT);
+  pinMode(nOCTW, INPUT);
+  pinMode(nFAULT, INPUT);
 
   // Set the ADC input pins
-  pinMode(VM1, INPUT);
-  pinMode(VM2, INPUT);
-  pinMode(VM3, INPUT);
-  pinMode(I1, INPUT);
-  pinMode(I2, INPUT);
+  pinMode(VIN, INPUT);
+  pinMode(VA, INPUT);  
+  pinMode(VB, INPUT);
+  pinMode(VC, INPUT);
+  pinMode(SO1, INPUT);
+  pinMode(SO2, INPUT);
 
   //debugging
   pinMode(LED_BUILTIN, OUTPUT);
@@ -119,9 +126,13 @@ ISR(TIMER1_OVF_vect){
   timer1_overflow++;
   debug_led_state = (debug_led_state+1)%2;
   digitalWrite(LED_BUILTIN, debug_led_state);
+  print_adc = 1;
 }
 
 
+/* Timer1 COMPA is the main motor commutation timer
+ * every time it expires we check and update commutation
+ */
 ISR(TIMER1_COMPA_vect){
   //set up the new interrupt output compare register value
   OCR1A = TCNT1 + TIMER1_DELAY;
@@ -169,7 +180,7 @@ void setup_menu(){
   m.add_item(MenuItem('d', "Slow down", *slowDown));
   m.add_item(MenuItem('g', "Go", *start_motor));
   m.add_item(MenuItem('s', "Stop", *stop_motor));
-  m.add_item(MenuItem('a', "Print ADC", *print_adc));
+  m.add_item(MenuItem('a', "Print ADC", *print_adc_vals));
   m.add_item(MenuItem('?', "Display Help", *display_help));
   m.print_menu();
 }
@@ -180,6 +191,7 @@ void setup_menu(){
  */
 void setup(){
   debug_led_state = 0;
+  print_adc = 0;
   Serial.begin(9600);
 
   setup_menu();
@@ -203,9 +215,23 @@ void loop() {
     m.parse_menu(Serial.read());
     m.print_menu();
   }
+  if (print_adc){
+    print_adc = 0;
+    //print_adc_vals();
+  }
 }
 
 
+
+void print_adc_vals(){
+  Serial.print("VIN = ");Serial.println(adc_vals[VIN]);
+  Serial.print("VA = ");Serial.println(adc_vals[VA]);
+  Serial.print("VB = ");Serial.println(adc_vals[VB]);
+  Serial.print("VC = ");Serial.println(adc_vals[VC]);
+  Serial.print("SO1 = ");Serial.println(adc_vals[SO1]);
+  Serial.print("SO2 = ");Serial.println(adc_vals[SO2]);
+}
+  
 
 /*
  * UI Callbacks
@@ -251,12 +277,4 @@ void stop_motor() {
 
 void display_help() {
   Serial.println("Help menu:");
-}
-
-void print_adc() {
-  Serial.println("ADC vals:");
-  for(byte i = 0; i < NUM_ADC_INPUTS; i++){
-    Serial.print(" "); Serial.print(i); Serial.print(" :");
-    Serial.println(adc_vals[i]);
-  }
 }
