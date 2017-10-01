@@ -13,18 +13,23 @@
    OC2B = 3
  *****/
 //Digital outputs
-#define IN1 9
-#define IN2 8
-#define IN3 7
-#define EN1 11
-#define EN2 6
-#define EN3 5
+#define EN_GATE 10
+#define INH_A 9
+#define INH_B 8
+#define INH_C 7
+#define INL_A 11
+#define INL_B 6
+#define INL_C 5
+//Digital inputs
+#define nOCTW 2
+#define nFAULT 3
 //Analog inputs
-#define VM1 0
-#define VM2 1
-#define VM3 2
-#define I1 3
-#define I2 4
+#define VIN 0
+#define VA 1
+#define VB 2
+#define VC 3
+#define SO1 4
+#define SO2 5
 #define NUM_ADC_INPUTS 5
 
 
