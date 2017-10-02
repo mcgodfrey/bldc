@@ -64,15 +64,12 @@
 #include "pwm.h"
 #include "timer1.h"
 #include "motor.h"
+#include "adc.h"
 
 
 Motor mot;
 MenuSystem m;
-byte pwm_out;
-
-byte analog_inputs[] = {VIN, VA, VB, VC, SO1, SO2};
-byte current_adc_input;
-int adc_vals[NUM_ADC_INPUTS];
+byte pwm_duty_cycle;
 
 byte debug_led_state;
 byte print_adc;
@@ -126,7 +123,6 @@ ISR(TIMER1_OVF_vect){
   timer1_overflow++;
   debug_led_state = (debug_led_state+1)%2;
   digitalWrite(LED_BUILTIN, debug_led_state);
-  print_adc = 1;
 }
 
 
@@ -141,46 +137,15 @@ ISR(TIMER1_COMPA_vect){
 }
 
 
-/* ADC convers complete interrupt
- * saves the value into the adc_vals array
- */
-ISR(ADC_vect){
-  adc_vals[current_adc_input] = ADCL | ADCH<<8;
-}
-
-
-/* Sets the ADC input channel-mul to 'channel'
- * Triggers a conversion to start
- */
-inline void trigger_adc(byte channel){
-  //Channel select is 4 LSB of ADMUX
-  ADMUX = (ADMUX & 0b11110000) | (0b00001111 & channel);
-  ADCSRA |= _BV(ADSC);
-}
-
-
-void setup_adc(){
-  current_adc_input = 0;
-  ADMUX = _BV(REFS0);               //AVCC reference, right justified result, default input mux 0
-  //enable ADC and set prescaler to 128 (16MHz/128 = 125kHz / 13 ~ 9615Hz = 104us
-  ADCSRA = _BV(ADEN) | _BV(ADPS2) | _BV(ADPS1) | _BV(ADPS0);
-  ADCSRB = 0;                       //comparator disabled, auto-trigger source set to 0
-  
-  //The first conversion takes longer than normal, so trigger a conversion now
-  trigger_adc(current_adc_input);
-  while (!(ADCSRA & _BV(ADIF))){ }  //wait until the ADIF bit is set
-  ADCSRA &= ~_BV(ADIF);             //clear the ADIF bit
-  ADCSRA |= _BV(ADIE);              //enable the interrupt now that the first conversion is finished
-}
-
-
 void setup_menu(){
   // Set up the Menu
+  m.add_item(MenuItem('g', "Go", *start_motor));
+  m.add_item(MenuItem('a', "Print ADC", *print_adc_vals));
   m.add_item(MenuItem('u', "Speed up", *speedUp));
   m.add_item(MenuItem('d', "Slow down", *slowDown));
-  m.add_item(MenuItem('g', "Go", *start_motor));
+  m.add_item(MenuItem('h', "Higher current", *increase_pwm));
+  m.add_item(MenuItem('l', "Lower current", *decrease_pwm));
   m.add_item(MenuItem('s', "Stop", *stop_motor));
-  m.add_item(MenuItem('a', "Print ADC", *print_adc_vals));
   m.add_item(MenuItem('?', "Display Help", *display_help));
   m.print_menu();
 }
@@ -192,13 +157,14 @@ void setup_menu(){
 void setup(){
   debug_led_state = 0;
   print_adc = 0;
+  pwm_duty_cycle = INITIAL_DUTY_CYCLE;
   Serial.begin(9600);
 
   setup_menu();
   setup_pins();
   setup_adc();
   setup_pwm();
-  set_duty_cycle(100);
+  set_duty_cycle(pwm_duty_cycle);
   setup_timer_1();
 
 }
@@ -224,45 +190,58 @@ void loop() {
 
 
 void print_adc_vals(){
-  Serial.print("VIN = ");Serial.println(adc_vals[VIN]);
-  Serial.print("VA = ");Serial.println(adc_vals[VA]);
-  Serial.print("VB = ");Serial.println(adc_vals[VB]);
-  Serial.print("VC = ");Serial.println(adc_vals[VC]);
-  Serial.print("SO1 = ");Serial.println(adc_vals[SO1]);
-  Serial.print("SO2 = ");Serial.println(adc_vals[SO2]);
+  Serial.print("VIN = ");Serial.println(adc_vals[VIN - A0]);
+  Serial.print("VA = ");Serial.println(adc_vals[VA - A0]);
+  Serial.print("VB = ");Serial.println(adc_vals[VB - A0]);
+  Serial.print("VC = ");Serial.println(adc_vals[VC - A0]);
+  Serial.print("SO1 = ");Serial.println(adc_vals[SO1 - A0]);
+  Serial.print("SO2 = ");Serial.println(adc_vals[SO2 - A0]);
 }
   
 
 /*
  * UI Callbacks
  */
-unsigned long speed_inc = 1000;
+float speed_inc = 0.1;
+byte duty_cycle_inc = 10;
+
 void speedUp() {
   Serial.println("Increasing the speed!!!");
-  unsigned long t = mot.get_target_phase_time();
-  Serial.print("Old phase time = "); Serial.println(t);
-  if(t < 2*speed_inc){
-    t = speed_inc;
-  }else{
-    t -= speed_inc;
-  }
-  mot.set_target_phase_time(t);
-  Serial.print("Speed = ");
-  Serial.println(t);
+  Serial.print("Old speed = "); Serial.println(mot.get_target_speed());
+  mot.change_speed_relative(1.0+speed_inc);
+  Serial.print("Speed = "); Serial.println(mot.get_target_speed());
 }
+
 
 void slowDown() {
   Serial.println("Slowing down...");
-  unsigned long t = mot.get_target_phase_time();
-  Serial.print("Old phase time = "); Serial.println(t);
-  if(t > 1000000000-speed_inc){
-    t = 1000000000;
+  Serial.print("Old speed = "); Serial.println(mot.get_target_speed());
+  mot.change_speed_relative(1.0-speed_inc);
+  Serial.print("Speed = "); Serial.println(mot.get_target_speed());
+}
+
+void increase_pwm() {
+  Serial.println("Increasing PWM duty cycle...");
+  Serial.print("Old duty cycle = "); Serial.println(pwm_duty_cycle);
+  if(pwm_duty_cycle > 254-duty_cycle_inc){
+    pwm_duty_cycle = 254;
   }else{
-    t += speed_inc;
+    pwm_duty_cycle += duty_cycle_inc;
   }
-  mot.set_target_phase_time(t);
-  Serial.print("Speed = ");
-  Serial.println(t);
+  set_duty_cycle(pwm_duty_cycle);
+  Serial.print("New duty cycle = "); Serial.println(pwm_duty_cycle);
+}
+
+void decrease_pwm() {
+  Serial.println("Decreasing PWM duty cycle...");
+  Serial.print("Old duty cycle = "); Serial.println(pwm_duty_cycle);
+  if(pwm_duty_cycle <= duty_cycle_inc){
+    pwm_duty_cycle = 1;
+  }else{
+    pwm_duty_cycle -= duty_cycle_inc;
+  }
+  set_duty_cycle(pwm_duty_cycle);
+  Serial.print("New duty cycle = "); Serial.println(pwm_duty_cycle);
 }
 
 void start_motor() {
