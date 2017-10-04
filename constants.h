@@ -66,8 +66,29 @@
 #define TIMER1_FREQ ((unsigned long)((SYSTEM_CLOCK_FREQ)/(TIMER1_PRESCALER)))
 
 
+//ADC clock prescaler
+#define ADC_PRESCALER 128
+#define ADC_FREQUENCY ((unsigned long)(SYSTEM_CLOCK_FREQ/ADC_PRESCALER))
+#if ADC_PRESCALER == 128
+#define ADCSRA_MASK (_BV(ADPS2) | _BV(ADPS1) | _BV(ADPS0))
+#elif ADC_PRESCALER == 64
+#define ADCSRA_MASK (_BV(ADPS2) | _BV(ADPS1))
+#elif ADC_PRESCALER == 32
+#define ADCSRA_MASK (_BV(ADPS2) | _BV(ADPS0))
+#elif ADC_PRESCALER == 16
+#define ADCSRA_MASK (_BV(ADPS2))
+#elif ADC_PRESCALER == 8
+#define ADCSRA_MASK (_BV(ADPS1) | _BV(ADPS0))
+#elif ADC_PRESCALER == 4
+#define ADCSRA_MASK (_BV(ADPS1))
+#elif ADC_PRESCALER == 2
+#define ADCSRA_MASK (_BV(ADPS0))
+#endif
+
+
 //Initial settings
 #define INITIAL_DUTY_CYCLE 10
 #define INITIAL_SPEED 0.2
+
 
 #endif  //CONSTANTS_H_

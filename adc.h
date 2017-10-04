@@ -10,6 +10,8 @@ extern unsigned int adc_vals[NUM_ADC_INPUTS];
 
 
 void setup_adc();
+void set_auto_timer1_trigger();
+void set_manual_trigger();
 
 
 /* Sets the ADC input channel-mul to 'channel'
