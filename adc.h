@@ -7,10 +7,10 @@
 extern byte analog_inputs[];
 extern byte current_adc_input;
 extern unsigned int adc_vals[NUM_ADC_INPUTS];
-
+extern byte new_adc_val;
 
 void setup_adc();
-void set_auto_timer1_trigger();
+void set_auto_timer0_trigger();
 void set_manual_trigger();
 
 

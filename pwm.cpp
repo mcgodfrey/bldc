@@ -22,12 +22,6 @@ void setup_pwm() {
   //TIMSK2 = _BV(TOIE2);
 }
 
-//Debug
-//ISR(TIMER2_OVF_vect){
-//  digitalWrite(LED_BUILTIN, HIGH);
-//}
-
-
 
 /* Start PWM output on a given pin (INH_A, INH_B, INH_C)
  * must be called once for each pin you want to start

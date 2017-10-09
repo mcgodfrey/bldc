@@ -2,6 +2,11 @@
 #define CONSTANTS_H_
 
 
+
+#define MIN_SPEED 0.5
+#define MAX_SPEED 20
+#define SPEED_MULTIPLIER 0.2
+
 /*****
    Pins
    PWM pin mapping
@@ -36,7 +41,7 @@
 
 //Timer1 settings
 #define SYSTEM_CLOCK_FREQ 16000000
-#define TIMER1_PRESCALER 64
+#define TIMER1_PRESCALER 256
 
 // ADC timer delay between triggers
 // ADC conversion takes 100us. So I want to trigger every ~150-200us
@@ -87,7 +92,7 @@
 
 
 //Initial settings
-#define INITIAL_DUTY_CYCLE 10
+#define INITIAL_DUTY_CYCLE 30
 #define INITIAL_SPEED 0.2
 
 

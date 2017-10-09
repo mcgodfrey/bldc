@@ -3,6 +3,7 @@
 byte analog_inputs[] = {VIN, VA, VB, VC, SO1, SO2};
 byte current_adc_input;
 unsigned int adc_vals[NUM_ADC_INPUTS];
+byte new_adc_val;
 
 
 /* Intially set up to require a manual trigger (ie. calling trigger_adc(chan)
@@ -24,6 +25,8 @@ unsigned int adc_vals[NUM_ADC_INPUTS];
  */
 void setup_adc(){
   current_adc_input = 0;
+  new_adc_val = 0;
+
   ADMUX = _BV(REFS0);               //AVCC reference, right justified result, default input mux 0
   //enable ADC and set prescaler to 128 (16MHz/128 = 125kHz / 13 ~ 9615Hz = 104us
   ADCSRA = _BV(ADEN) | ADCSRA_MASK;
@@ -53,4 +56,5 @@ void set_manual_trigger(){
  */
 ISR(ADC_vect){
   adc_vals[current_adc_input] = ((unsigned int)ADCL) | ((unsigned int)ADCH<<8);
+  new_adc_val = 1;
 }
