@@ -162,9 +162,10 @@ void setup(){
 
   setup_menu();
   setup_pins();
-  setup_adc();
   setup_pwm();
   set_duty_cycle(pwm_duty_cycle);
+  setup_adc();
+  set_auto_timer0_trigger();
   setup_timer_1();
 
 }
