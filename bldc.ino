@@ -44,12 +44,12 @@ void setup_pins() {
   pinMode(nFAULT, INPUT);
 
   // Set the ADC input pins
-  pinMode(VIN, INPUT);
-  pinMode(VA, INPUT);  
-  pinMode(VB, INPUT);
-  pinMode(VC, INPUT);
-  pinMode(SO1, INPUT);
-  pinMode(SO2, INPUT);
+  //pinMode(VIN+A0, INPUT);
+  //pinMode(VA+A0, INPUT);  
+  //pinMode(VB+A0, INPUT);
+  //pinMode(VC+A0, INPUT);
+  //pinMode(SO1+A0, INPUT);
+  //pinMode(SO2+A0, INPUT);
 
   //debugging
   pinMode(LED_BUILTIN, OUTPUT);
@@ -133,25 +133,12 @@ void setup(){
   pwm_duty_cycle = INITIAL_DUTY_CYCLE;
   Serial.begin(9600);
 
-
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(100);
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(100);
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(100);
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(100);
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(100);
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(100);
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(100);
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(100);
-
-
+  for(byte i=0; i<5; i++){
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(50);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(50);
+  }
   
   //setup_menu();
   setup_pins();
@@ -166,7 +153,11 @@ void setup(){
   setup_adc();
   Serial.println("Set up adc");
 
-  current_adc_input = VC;
+  current_adc_input = VB;
+  set_adc_channel(current_adc_input);
+  Serial.print("current adc input = ");
+  Serial.println(current_adc_input);
+    
   set_auto_timer0_trigger();
   Serial.println("Set up adc trigger and input");
 
@@ -175,6 +166,7 @@ void setup(){
 
   mot.start();
   Serial.println("Started motor");
+
 }
 
 
@@ -195,6 +187,7 @@ void loop() {
   //}
   if(new_adc_val > 0){
     new_adc_val = 0;
+    //float current = ((float)adc_vals[current_adc_input]-480)/(0.002*8*1024);
     Serial.println(adc_vals[current_adc_input]);
   }
 }

@@ -40,16 +40,38 @@ void setup_adc(){
 }
 
 
+/* Sets the ADC input channel-mul to 'channel'
+ * Triggers a conversion to start
+ */
+void trigger_adc(byte channel){
+  //Channel select is 4 LSB of ADMUX
+  ADMUX = (ADMUX & 0b11110000) | (0b00001111 & channel);
+  ADCSRA |= _BV(ADSC);
+}
+
+
+/* Sets the ADC input channel-mul to 'channel'
+ * Triggers a conversion to start
+ */
+void set_adc_channel(byte channel){
+  current_adc_input = channel;
+  //Channel select is 4 LSB of ADMUX
+  ADMUX = (ADMUX & 0b11110000) | (0b00001111 & channel);
+}  
+
+
 /*Set to auto trigger on timer/counter0 overflow*/
 void set_auto_timer0_trigger(){
   ADCSRB |= _BV(ADTS2);   //set trigger source to timer/counter0 overflow
   ADCSRA |= _BV(ADATE);   //enable auto-trigger
 }
 
+
 /*Set into manual trigger mode*/
 void set_manual_trigger(){
   ADCSRA &= ~_BV(ADATE);   //disable auto-trigger
 }
+
 
 /* ADC convers complete interrupt
  * saves the value into the adc_vals array

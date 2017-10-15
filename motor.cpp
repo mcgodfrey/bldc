@@ -1,4 +1,6 @@
 #include "motor.h"
+#include "adc.h"
+
 
 Motor::Motor(){
   state = OFF;
@@ -14,7 +16,7 @@ void Motor::start(){
   target_speed = INITIAL_SPEED;
   direction = FORWARD;
   digitalWrite(EN_GATE, HIGH);
-  check_commutation();
+  update_commutation();
 }
 
 
@@ -59,16 +61,18 @@ void Motor::check_commutation(){
     unsigned long current_timestamp = ((unsigned long)timer1_overflow<<16) + TCNT1;
     if((current_timestamp - prev_phase_timestamp) > target_phase_time){
       prev_phase_timestamp = current_timestamp;
-      update_commutation_state();
+      commutation_state = (commutation_state+1)%6;
+      update_commutation();
     }
   }
 }
 
 
-void Motor::update_commutation_state(){
-  commutation_state = (commutation_state+1)%6;
+void Motor::update_commutation(){
   switch(commutation_state){
     case 0:
+      set_manual_trigger();
+      //set_auto_timer0_trigger();
       start_pwm(INH_A);
       stop_pwm(INH_B);
       stop_pwm(INH_C);
@@ -77,6 +81,8 @@ void Motor::update_commutation_state(){
       digitalWrite(INL_C, LOW);
       break;
     case 1:
+      //set_manual_trigger();
+      set_auto_timer0_trigger();
       start_pwm(INH_A);
       stop_pwm(INH_B);
       stop_pwm(INH_C);
@@ -85,6 +91,8 @@ void Motor::update_commutation_state(){
       digitalWrite(INL_C, HIGH);
       break;
     case 2:
+      set_manual_trigger();
+      //set_auto_timer0_trigger();
       stop_pwm(INH_A);
       start_pwm(INH_B);
       stop_pwm(INH_C);
@@ -93,6 +101,8 @@ void Motor::update_commutation_state(){
       digitalWrite(INL_C, HIGH);
       break;
     case 3:
+      set_manual_trigger();
+      //set_auto_timer0_trigger();
       stop_pwm(INH_A);
       start_pwm(INH_B);
       stop_pwm(INH_C);
@@ -101,6 +111,8 @@ void Motor::update_commutation_state(){
       digitalWrite(INL_C, LOW);
       break;
     case 4:
+      //set_manual_trigger();
+      set_auto_timer0_trigger();
       stop_pwm(INH_A);
       stop_pwm(INH_B);
       start_pwm(INH_C);
@@ -109,6 +121,8 @@ void Motor::update_commutation_state(){
       digitalWrite(INL_C, LOW);
       break;
     case 5:
+      set_manual_trigger();
+      //set_auto_timer0_trigger();
       stop_pwm(INH_A);
       stop_pwm(INH_B);
       start_pwm(INH_C);
