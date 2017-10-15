@@ -24,14 +24,13 @@ class Motor{
 
     void start();
     void stop();
-    void check_commutation();
     // Called periodically to check the commutation state
     // This can be either open loop (ie. it just waits for the correct time as determined
     //  from the target speed), or closed loop, in which case it looks at the backEMF on
     //  the non-driven phase to look for a zero crossing.
-    void check_commutation_state();
+    void check_commutation();
     // Take the current commutation_state and speed and update the PWM pins
-    void update_commutation_state();
+    void update_commutation();
 
     /*Speed Changes*/
     void change_speed_relative(float change);

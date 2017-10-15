@@ -2,6 +2,14 @@
 #define CONSTANTS_H_
 
 
+//Initial settings
+#define INITIAL_DUTY_CYCLE 30
+#define INITIAL_SPEED 0.1
+
+#define MIN_SPEED 0.1
+#define MAX_SPEED 20
+#define SPEED_MULTIPLIER 0.1
+
 /*****
    Pins
    PWM pin mapping
@@ -25,18 +33,19 @@
 #define nFAULT 3
 //Analog inputs
 // Note that A0 starts at pin 14
-#define VIN A0
-#define VC A1
-#define VB A2
-#define VA A3
-#define SO1 A4
-#define SO2 A5
+#define VIN 0
+#define VC 1
+#define VB 2
+#define VA 3
+#define SO1 4
+#define SO2 5
+#define BG_REF 14
 #define NUM_ADC_INPUTS 6
 
 
 //Timer1 settings
 #define SYSTEM_CLOCK_FREQ 16000000
-#define TIMER1_PRESCALER 64
+#define TIMER1_PRESCALER 256
 
 // ADC timer delay between triggers
 // ADC conversion takes 100us. So I want to trigger every ~150-200us
@@ -47,7 +56,7 @@
 #define TIMER1_DELAY (10000)
 #elif TIMER1_PRESCALER == 8
 #define TIMER1_PRESCALER_MASK (_BV(CS11))
-#define ADC_DELAY (300)
+#define ADC_DELAY (3b00)
 #define TIMER1_DELAY (1200)
 #elif TIMER1_PRESCALER == 64
 #define TIMER1_PRESCALER_MASK (_BV(CS11) | _BV(CS10))
@@ -67,7 +76,7 @@
 
 
 //ADC clock prescaler
-#define ADC_PRESCALER 128
+#define ADC_PRESCALER 16
 #define ADC_FREQUENCY ((unsigned long)(SYSTEM_CLOCK_FREQ/ADC_PRESCALER))
 #if ADC_PRESCALER == 128
 #define ADCSRA_MASK (_BV(ADPS2) | _BV(ADPS1) | _BV(ADPS0))
@@ -85,10 +94,20 @@
 #define ADCSRA_MASK (_BV(ADPS0))
 #endif
 
-
-//Initial settings
-#define INITIAL_DUTY_CYCLE 10
-#define INITIAL_SPEED 0.2
+//PWM clock prescaler
+#define PWM_PRESCALER 1
+#define PWM_FREQUENCY ((unsigned long)(SYSTEM_CLOCK_FREQ/PWM_PRESCALER/(2*256)))
+#if PWM_PRESCALER == 1
+#define PWM_CS_MASK (_BV(CS00))
+#elif PWM_PRESCALER == 8
+#define PWM_CS_MASK (_BV(CS01))
+#elif PWM_PRESCALER == 64
+#define PWM_CS_MASK (_BV(CS01) | _BV(CS00))
+#elif PWM_PRESCALER == 256
+#define PWM_CS_MASK (_BV(CS02))
+#elif PWM_PRESCALER == 1024
+#define PWM_CS_MASK (_BV(CS02) | _BV(CS00))
+#endif
 
 
 #endif  //CONSTANTS_H_

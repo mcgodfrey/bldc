@@ -23,7 +23,6 @@ void setup_timer_1(){
   OCR1BH = ADC_DELAY >> 8;        //initial timer is the default speed_delay
   OCR1BL = ADC_DELAY & 0x00FF;    //initial timer is the default speed_delay
  //interrupt on overflow, output comprae A and B match
-  TIMSK1 = _BV(OCIE1A) | _BV(OCIE1B) | _BV(TOIE1);
+  //TIMSK1 = _BV(OCIE1A) | _BV(OCIE1B) | _BV(TOIE1);
+  TIMSK1 = _BV(OCIE1A) |  _BV(TOIE1);
 }
-
-
