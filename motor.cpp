@@ -81,14 +81,14 @@ void Motor::update_commutation(){
       digitalWrite(INL_C, LOW);
       break;
     case 1:
-      //set_manual_trigger();
-      set_auto_timer0_trigger();
       start_pwm(INH_A);
       stop_pwm(INH_B);
       stop_pwm(INH_C);
       digitalWrite(INL_A, LOW);
       digitalWrite(INL_B, LOW);
       digitalWrite(INL_C, HIGH);
+      //set_manual_trigger();
+      set_auto_timer0_trigger();
       break;
     case 2:
       set_manual_trigger();
@@ -111,14 +111,14 @@ void Motor::update_commutation(){
       digitalWrite(INL_C, LOW);
       break;
     case 4:
-      //set_manual_trigger();
-      set_auto_timer0_trigger();
       stop_pwm(INH_A);
       stop_pwm(INH_B);
       start_pwm(INH_C);
       digitalWrite(INL_A, HIGH);
       digitalWrite(INL_B, LOW);
       digitalWrite(INL_C, LOW);
+      //set_manual_trigger();
+      set_auto_timer0_trigger();
       break;
     case 5:
       set_manual_trigger();
