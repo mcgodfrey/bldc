@@ -1,14 +1,17 @@
 #include "fsm.h"
-
+#include "timer16.h"
 #include "Arduino.h"
+
 /*
  * Get the highest priority event
  * If nothing else, then return AUTO
  */
-event_t get_event(){
-  if(0){ //if there is a timer1a overflow
+event_t get_event(timer16_t *timer1a, timer16_t *timer1b){
+  timer16_check_interrupt(timer1a);
+  timer16_check_interrupt(timer1b);
+  if(timer1a->interrupt){
     return TIMER1A_INT;
-  } else if(0){ //if there is a timer1b overflow
+  } else if(timer1b->interrupt){
     return TIMER1B_INT;
   } else if(0){ //if there is a new adc value
     return ADC_READY;
@@ -21,17 +24,14 @@ event_t get_event(){
 /*
  * Given the current state and new event, determine if there is a new state transition
  */
-state_t get_transition(char transition_table[][3], byte num_rows, state_t state, event_t event){
+state_t get_transition(transition_t transition_table[], byte num_rows, state_t state, event_t event){
   //default to NONE
   state_t new_state = NONE;
   
   for(byte i = 0; i < num_rows; i++) {
-    Serial.print("    current row state = "); Serial.println(transition_table[i][0]);
-    if((transition_table[i][0] = state)){
-      Serial.println("  Found the state!");
-      if (transition_table[i][1] == event){
-        Serial.println("   Found the event!!");
-        new_state = transition_table[i][2];
+    if(transition_table[i].current_state == state){
+      if (transition_table[i].event == event){
+        new_state = transition_table[i].new_state;
         break;
       }
     }
