@@ -2,13 +2,24 @@
 #include "timer16.h"
 #include "adc.h"
 #include "constants.h"
+#include "io.h"
+//#include "motor.h"
 
 state_t current_state;
 event_t event;
 byte num_transitions;
 timer16_t timer1a;
 timer16_t timer1b;
+//motor_t motor;
 
+/*SW delay for debugging since delay() doesn't work any more*/
+void sw_delay(unsigned int ms){
+  float delay_time = (0.001*ms*SYSTEM_CLOCK_FREQ)/100;
+  Serial.println(delay_time);
+  for(unsigned long i=0; i<delay_time; i++){
+    volatile int x = i+i;
+  }
+}
 
 void dummy_fn(){
   
@@ -124,6 +135,13 @@ transition_t transition_table[] = {
 
 void setup(){
   Serial.begin(9600);
+  for(byte i=0; i<10; i++){
+    digitalWrite(LED_BUILTIN, HIGH);
+    //sw_delay(50);
+    digitalWrite(LED_BUILTIN, LOW);
+    //sw_delay(50);
+  }
+
   current_state = IDLE;
   num_transitions = sizeof(transition_table)/(sizeof(transition_t));
   Serial.print("Num rows in transition table = ");Serial.println(num_transitions);
@@ -131,6 +149,8 @@ void setup(){
   timer16_init(&timer1a, 'a');
   timer16_init(&timer1b, 'b');
   adc_setup();
+  io_setup();
+  //  motor_init(&motor);
 }
 
 
