@@ -7,6 +7,7 @@ void timer16_setup(){
   TCCR1A = 0;   //no PWM, normal mode
   TCCR1B = TIMER1_PRESCALER_MASK;
   TCCR1C = 0;   //unused
+  TIMSK1 = 0;
   TCNT1 = 0;   //timer initially 0
   timer1a_flag = 0;
   timer1b_flag = 0;
@@ -42,20 +43,24 @@ void timer16_clear_interrupt(timer16_t *t){
   t->interrupt = 0;
 }
 
-/*Set the timer1 compare interrupt to go off in "count" counts*/
+/*Set the timer1 compare interrupt to go off in "count" counts
+ *Note that first I have to clear the corresponding output compare flag
+ * Otherwise the interrupt will trigger immediately when you enable it
+ * if the flag happens to be set. This is obviously not what we want...
+ *Note I allow the TCNT1 + count addition to overflow. This is ok in this
+ * case because the timer also overflows and should be correct. Since "count"
+ * is the same size (16 bits) as the counter it will never be more than the
+ * timer period.
+*/
 void timer16_set_interrupt(timer16_t *t, unsigned int count){
   if(t->which == 'a'){
-    OCR1A = TCNT1 + count;
-    TIMSK1 |= _BV(OCIE1A);
-    #ifdef DEBUG
-    Serial.print("setting OCR1A to ");Serial.println(TCNT1+count);
-    #endif
+    TIFR1 |= _BV(OCF1A);    //clear the compare flag
+    OCR1A = TCNT1 + count;  //Set the compare register value
+    TIMSK1 |= _BV(OCIE1A);  //Enable the interrupt
   }else if(t->which == 'b'){
-    OCR1B = TCNT1 + count;
-    TIMSK1 |= _BV(OCIE1B);
-    #ifdef DEBUG
-    Serial.print("setting OCR1B to ");Serial.println(TCNT1+count);
-    #endif
+    TIFR1 |= _BV(OCF1B);    //clear the compare flag
+    OCR1B = TCNT1 + count;  //Set the compare register value
+    TIMSK1 |= _BV(OCIE1B);  //Enable the interrupt
   }
 }
 
@@ -73,7 +78,7 @@ void timer16_disable_interrupt(timer16_t *t){
 ISR(TIMER1_COMPA_vect){
   timer1a_flag = 1;
   #ifdef DEBUG
-  Serial.println("Timer1A Triggered");
+  Serial.print("Timer1A Triggered at ");Serial.println(TCNT1);
   #endif
 }
 
@@ -82,7 +87,7 @@ ISR(TIMER1_COMPA_vect){
 ISR(TIMER1_COMPB_vect){
   timer1b_flag = 1;
   #ifdef DEBUG
-  Serial.println("Timer1B Triggered");
+  Serial.print("Timer1B Triggered at ");Serial.println(TCNT1);
   #endif
 }
 

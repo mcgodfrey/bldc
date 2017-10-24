@@ -1,7 +1,7 @@
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
-#define DEBUG
+//#define DEBUG
 
 //Timer1 settings
 #define SYSTEM_CLOCK_FREQ 16000000
