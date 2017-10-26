@@ -3,6 +3,7 @@
 #include "adc.h"
 #include "constants.h"
 #include "io.h"
+#include "pwm.h"
 #include "motor.h"
 
 state_t current_state;
@@ -34,6 +35,7 @@ void idle_fn(){
 
 void start_fn(){
   Serial.println("START");
+  motor_start(&motor, 1.0);
   Serial.flush();
 }
 
@@ -149,32 +151,22 @@ void setup(){
 
   current_state = IDLE;
   num_transitions = sizeof(transition_table)/(sizeof(transition_t));
-  #ifdef DEBUG
-  Serial.print("Num rows in transition table = ");Serial.println(num_transitions);
-  #endif
   timer16_setup();
   timer16_init(&timer1a, 'a');
   timer16_init(&timer1b, 'b');
   adc_setup();
   io_setup();
+  pwm_setup();
+  pwm_set_duty_cycle(40);
   motor_init(&motor);
 }
 
 
 void loop(){
-  //  Serial.println(""); Serial.println("");
-  //  Serial.print("current_state = ");Serial.println(current_state);
   event = get_event(&timer1a, &timer1b);
-  //  Serial.print("event = ");Serial.println(event);
   state_t next_state = get_transition(transition_table, num_transitions, current_state, event);
-  //  Serial.print("next_state = ");Serial.println(next_state);
-  //  Serial.flush();
   if(next_state != NONE){
     state_functions[next_state]();
     current_state = next_state;
   }
-  // }else{
-  //   Serial.print("timer1a.interrupt = ");Serial.println(timer1a.interrupt);
-  //   Serial.print(TCNT1);Serial.print("/");Serial.println(OCR1A);
-  // }
 }
