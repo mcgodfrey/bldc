@@ -22,8 +22,6 @@ typedef struct {
   float target_speed;
   float max_acceleration;
   unsigned int adc_noise_delay;
-  float max_dv;
-  unsigned int delay_count;
 
   //objects
   timer16_t *timer1a;

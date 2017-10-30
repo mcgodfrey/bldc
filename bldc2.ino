@@ -52,7 +52,7 @@ void start_fn(config_t *c){
   Serial.print("min_speed = "); Serial.println(c->min_speed);
   Serial.print("max_speed = "); Serial.println(c->max_speed);
   Serial.print("adc_noise_delay = "); Serial.println(c->adc_noise_delay);
-  motor_start(&motor);
+  motor_start(c->motor);
   c->current_speed = c->min_speed;
   c->target_speed = c->min_speed;
   Serial.println(F("START"));
@@ -61,7 +61,7 @@ void start_fn(config_t *c){
 
 void check_feedback_fn(config_t *c){
   adc_disable_trigger();
-  timer16_disable_interrupt(&timer1a);
+  timer16_disable_interrupt(c->timer1a);
 
   float prev_time = timer16_get_time();
   c->current_speed = 1.0/prev_time;
@@ -78,33 +78,14 @@ void check_feedback_fn(config_t *c){
 }
 
 unsigned int calc_open_loop_delay(config_t *c){
-  float max_dv = c->max_acceleration/c->current_speed;
-  if(max_dv < 0.5){
-    max_dv = 0.5;
-  }
-  
   float new_speed;
-  if(c->target_speed > c->current_speed){
-    if((c->target_speed - c->current_speed) < max_dv){
-      new_speed = c->target_speed;
-    }else{
-      new_speed = c->current_speed + max_dv;
-    }
-  }else{
-    if((c->current_speed - c->target_speed) < max_dv){
-      new_speed = c->target_speed;
-    }else{
-      new_speed = c->current_speed - max_dv;
-    }
-  }
-  //new_speed = c->target_speed;
+  new_speed = c->target_speed;
   if(new_speed > c->max_speed){
     new_speed = c->max_speed;
   }else if(new_speed < c->min_speed){
     new_speed = c->min_speed;
   }
   unsigned int delay_count = TIMER1_FREQ / new_speed;
-  c->delay_count = delay_count;
   return(delay_count);
 }
 
@@ -114,82 +95,59 @@ byte calc_closed_loop_pwm(config_t *c){
 }
 
 void update_commutation_fn(config_t *c){
-  motor_update_commutation(&motor);
+  motor_update_commutation(c->motor);
+  timer16_reset();
 
   if(c->open_loop){
     unsigned int delay_count = calc_open_loop_delay(c);
-    timer16_reset();
-    timer16_set_interrupt(&timer1a, delay_count);  //Open loop timer
-    timer16_set_interrupt(&timer1b, c->adc_noise_delay); //ADC noise delay
+    timer16_set_interrupt(c->timer1a, delay_count);  //Open loop timer
+    timer16_set_interrupt(c->timer1b, c->adc_noise_delay); //ADC noise delay
   }else{
     byte pwm = calc_closed_loop_pwm(c);
     //set the pwm here
     timer16_reset();
-    timer16_set_interrupt(&timer1b, c->adc_noise_delay); //ADC noise delay
+    timer16_set_interrupt(c->timer1b, c->adc_noise_delay); //ADC noise delay
   }
 }
 
 
 void adc_noise_delay_fn(config_t *c){
-  timer16_disable_interrupt(&timer1b);
-  #ifdef DEBUG
-  Serial.println(F("ADC_NOISE_DELAY"));
-  Serial.flush();
-  #endif
+  timer16_disable_interrupt(c->timer1b);
 }
 
 void setup_vin_fn(config_t *c){
   adc_set_channel(ADC_VIN);
   adc_timer0_trigger();
-  #ifdef DEBUG
-  Serial.println(F("SETUP_VIN"));
-  Serial.flush();
-  #endif
 }
 
 void meas_vin_fn(config_t *c){
   adc_disable_trigger();
   adc_clear_flag();
-  #ifdef DEBUG
-  Serial.println(F("MEAS_VIN"));
-  Serial.print(F("VIN = "));Serial.println(adc_vals[ADC_VIN]);
-  Serial.flush();
-  #endif
 }
 
 void setup_vref_fn(config_t *c){
   adc_set_channel(ADC_VREF);
   adc_timer0_trigger();
-  #ifdef DEBUG
-  Serial.println(F("SETUP_VREF"));
-  Serial.flush();
-  #endif
 }
 
 void meas_vref_fn(config_t *c){
   adc_disable_trigger();
   adc_clear_flag();
-  #ifdef DEBUG
-  Serial.println(F("MEAS_VREF"));
-Serial.print(F("VREF = "));Serial.println(adc_vals[ADC_VREF]);
-  Serial.flush();
-  #endif
 }
 
 void setup_bemf_fn(config_t *c){
   adc_set_channel(ADC_VA);
   adc_timer0_trigger();
-  #ifdef DEBUG
-  Serial.println(F("SETUP_BEMF"));
-  Serial.flush();
-  #endif
 }
 
 void meas_bemf_fn(config_t *c){
   adc_clear_flag();
+  if(c->motor->undriven_phase == 'A'){
+    Serial.println(adc_vals[ADC_VA]);
+  }
   #ifdef DEBUG
   Serial.println(F("MEAS_BEMF"));
-Serial.print(F("BEMF = "));Serial.println(adc_vals[ADC_VA]);
+  Serial.print(F("BEMF = "));Serial.println(adc_vals[ADC_VA]);
   Serial.flush();
   #endif
 }
@@ -230,14 +188,13 @@ void set_speed(config_t *conf, const char *c){
   if(c[0] == '?'){
     Serial.print("Current Speed = ");Serial.println(conf->current_speed);
     //Serial.print("Max_dv = ");Serial.println(conf->max_dv);
-    Serial.print("delay_count = ");Serial.println(conf->delay_count);
   }else{
     float speed = atof(c);
     if(speed != 0.0){
-#ifdef DEBUG
+      //#ifdef DEBUG
       Serial.print(F("Setting speed to "));Serial.println(speed);
       Serial.flush();
-#endif
+      //#endif
       conf->target_speed = speed;
     }else{
       Serial.println(F("Invalid speed"));

@@ -61,11 +61,13 @@ void timer16_clear_interrupt(timer16_t *t){
 void timer16_set_interrupt(timer16_t *t, unsigned int count){
   if(t->which == 'a'){
     TIFR1 |= _BV(OCF1A);    //clear the compare flag
-    OCR1A = TCNT1 + count;  //Set the compare register value
+    //OCR1A = TCNT1 + count;  //Set the compare register value
+    OCR1A = count;  //Set the compare register value
     TIMSK1 |= _BV(OCIE1A);  //Enable the interrupt
   }else if(t->which == 'b'){
     TIFR1 |= _BV(OCF1B);    //clear the compare flag
-    OCR1B = TCNT1 + count;  //Set the compare register value
+    //   OCR1B = TCNT1 + count;  //Set the compare register value
+    OCR1B = count;  //Set the compare register value
     TIMSK1 |= _BV(OCIE1B);  //Enable the interrupt
   }
 }
