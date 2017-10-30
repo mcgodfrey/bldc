@@ -1,80 +1,35 @@
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
-
-//Initial settings
-#define INITIAL_DUTY_CYCLE 30
-#define INITIAL_SPEED 0.1
-
-#define MIN_SPEED 0.1
-#define MAX_SPEED 20
-#define SPEED_MULTIPLIER 0.1
-
-/*****
-   Pins
-   PWM pin mapping
-   OC0A = 6
-   OC0B = 5
-   OC1A = 9
-   OC1B = 10
-   OC2A = 11
-   OC2B = 3
- *****/
-//Digital outputs
-#define EN_GATE 10
-#define INH_A 11
-#define INH_B 6
-#define INH_C 5
-#define INL_A 9
-#define INL_B 8
-#define INL_C 7
-//Digital inputs
-#define nOCTW 2
-#define nFAULT 3
-//Analog inputs
-// Note that A0 starts at pin 14
-#define VIN 0
-#define VC 1
-#define VB 2
-#define VA 3
-#define SO1 4
-#define SO2 5
-#define BG_REF 14
-#define NUM_ADC_INPUTS 6
-
+//#define DEBUG
+#define RX_BUFFER_SIZE 32
+#define COMMAND_LEN 8
 
 //Timer1 settings
 #define SYSTEM_CLOCK_FREQ 16000000
-#define TIMER1_PRESCALER 256
+#define TIMER1_PRESCALER 8
 
-// ADC timer delay between triggers
-// ADC conversion takes 100us. So I want to trigger every ~150-200us
-// Timer1 should trigger every ~500us to update the state
 #if TIMER1_PRESCALER == 1
 #define TIMER1_PRESCALER_MASK (_BV(CS10))
-#define ADC_DELAY (2400)
-#define TIMER1_DELAY (10000)
 #elif TIMER1_PRESCALER == 8
 #define TIMER1_PRESCALER_MASK (_BV(CS11))
-#define ADC_DELAY (3b00)
-#define TIMER1_DELAY (1200)
 #elif TIMER1_PRESCALER == 64
 #define TIMER1_PRESCALER_MASK (_BV(CS11) | _BV(CS10))
-#define ADC_DELAY (38)
-#define TIMER1_DELAY (150)
 #elif TIMER1_PRESCALER == 256
 #define TIMER1_PRESCALER_MASK (_BV(CS12))
-#define ADC_DELAY (10)
-#define TIMER1_DELAY (44)
 #elif TIMER1_PRESCALER == 1024
 #define TIMER1_PRESCALER_MASK (_BV(CS12) | _BV(CS10))
-#define ADC_DELAY (3)
-#define TIMER1_DELAY (15)
 #endif
 
 #define TIMER1_FREQ ((unsigned long)((SYSTEM_CLOCK_FREQ)/(TIMER1_PRESCALER)))
+#define TIMER1_MAX 60000
 
 
+///////////////////////////////////////////////////////
+//ADC
+
+//ADC noise delay [us]
+#define ADC_DELAY 100
 //ADC clock prescaler
 #define ADC_PRESCALER 16
 #define ADC_FREQUENCY ((unsigned long)(SYSTEM_CLOCK_FREQ/ADC_PRESCALER))
@@ -94,20 +49,31 @@
 #define ADCSRA_MASK (_BV(ADPS0))
 #endif
 
-//PWM clock prescaler
-#define PWM_PRESCALER 1
-#define PWM_FREQUENCY ((unsigned long)(SYSTEM_CLOCK_FREQ/PWM_PRESCALER/(2*256)))
-#if PWM_PRESCALER == 1
-#define PWM_CS_MASK (_BV(CS00))
-#elif PWM_PRESCALER == 8
-#define PWM_CS_MASK (_BV(CS01))
-#elif PWM_PRESCALER == 64
-#define PWM_CS_MASK (_BV(CS01) | _BV(CS00))
-#elif PWM_PRESCALER == 256
-#define PWM_CS_MASK (_BV(CS02))
-#elif PWM_PRESCALER == 1024
-#define PWM_CS_MASK (_BV(CS02) | _BV(CS00))
-#endif
+//ADC Inputs
+#define NUM_ADC_INPUTS 16
+
+#define ADC_VIN 0
+#define ADC_VC 1
+#define ADC_VB 2
+#define ADC_VA 3
+#define ADC_SO1 4
+#define ADC_SO2 5
+#define ADC_VREF 14
+#define ADC_GND 15
+
+//Work out these...
+#define GET_VADC (adc_vals[ADC_VREF]*1024)
+#define GET_VIN(ch) ((VREF/1024) * (float)adc_vals[ch])
 
 
-#endif  //CONSTANTS_H_
+
+
+// Board level constants
+#define VREF 3.3
+#define VDIV_R1 22000
+#define VDIV_R2 10000
+#define RSENSE 0.002
+#define ISENSE_GAIN 40
+
+
+#endif //CONSTANTS_H_

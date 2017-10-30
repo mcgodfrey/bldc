@@ -1,18 +1,25 @@
-#ifndef _ADC_H
-#define _ADC_H
+#ifndef ADC_H_
+#define ADC_H_
 
-#include <Arduino.h>
-#include "constants.h"
+#include "Arduino.h"
+#include "Constants.h"
 
-extern byte analog_inputs[];
-extern byte current_adc_input;
 extern unsigned int adc_vals[NUM_ADC_INPUTS];
 extern byte new_adc_val;
 
-void setup_adc();
-void set_auto_timer0_trigger();
-void set_manual_trigger();
-void set_adc_channel(byte channel);
-void trigger_adc(byte channel);
+typedef struct{
+  byte interrupt;
+} adc_t;
 
-#endif //_ADC_H
+
+void adc_setup();
+void adc_init(adc_t *a);
+void adc_check_interrupt(adc_t *a);
+void adc_trigger(byte channel);
+void adc_set_channel(byte channel);
+void adc_timer0_trigger();
+void adc_disable_trigger();
+void adc_clear_flag();
+
+
+#endif //ADC_H_

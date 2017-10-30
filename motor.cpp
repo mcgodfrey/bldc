@@ -1,134 +1,98 @@
 #include "motor.h"
-#include "adc.h"
+#include "io.h"
+#include "pwm.h"
+#include "constants.h"
 
 
-Motor::Motor(){
-  state = OFF;
-  direction = FORWARD;
-  commutation_state = 0;
-  target_speed = 0;
-  stop();
+void motor_init(motor_t *m){
+  m->commutation_state = 0;
+  m->direction = FORWARD;
+  m->state = OFF;
+  m->undriven_phase = 'X';
 }
 
-void Motor::start(){
-  state = ON;
-  commutation_state = 0;
-  target_speed = INITIAL_SPEED;
-  direction = FORWARD;
+
+void motor_start(motor_t *m){
+  //first stop the motor to turn everything off and get into a known state
+  motor_stop(m);
+  // And now set everything up to turn on
+  m->state = ON;
+  m->commutation_state = 0;
+  m->direction = FORWARD;
   digitalWrite(EN_GATE, HIGH);
-  update_commutation();
 }
 
-
-void Motor::stop(){
-  state = OFF;
+void motor_stop(motor_t *m){
+  m->state = OFF;
   digitalWrite(EN_GATE, LOW);
-  stop_pwm(INH_A);
-  stop_pwm(INH_B);
-  stop_pwm(INH_C);
+  pwm_stop(INH_A);
+  pwm_stop(INH_B);
+  pwm_stop(INH_C);
   digitalWrite(INL_A, LOW);
   digitalWrite(INL_B, LOW);
   digitalWrite(INL_C, LOW);
 }
 
 
-void Motor::change_speed_relative(float change){
-  Serial.print("current speed = ");Serial.println(target_speed);
-  Serial.print("change = ");Serial.println(change);
-  target_speed = target_speed * change;
-  Serial.print("new speed = ");Serial.println(target_speed);
-}
-
-void Motor::set_target_speed(float speed){
-  target_speed = speed;
-}
-
-float Motor::get_target_speed(){
-  return(target_speed);
-}
-
-/* Checks if we need to advance the motor.
- * Open Loop Mode:
- *   Looks whether enough time has elapsed since the last commutation
- *   Phase time = timer_frequency [/second] / speed [rotations/second] / 6 [steps/rotation] 
- *              = [ counts/step ]
- */
-void Motor::check_commutation(){
-  unsigned long target_phase_time = (unsigned long)(TIMER1_FREQ / target_speed / 6.0);
-  if(state == OFF){
-    stop();
-  }else if(mode == OpenLoop){
-    unsigned long current_timestamp = ((unsigned long)timer1_overflow<<16) + TCNT1;
-    if((current_timestamp - prev_phase_timestamp) > target_phase_time){
-      prev_phase_timestamp = current_timestamp;
-      commutation_state = (commutation_state+1)%6;
-      update_commutation();
-    }
-  }
-}
-
-
-void Motor::update_commutation(){
-  switch(commutation_state){
+void motor_update_commutation(motor_t *m){
+  m->commutation_state = (m->commutation_state+1)%6;
+  #ifdef DEBUG
+  Serial.print("New commuation state = ");Serial.println(m->commutation_state);
+  #endif
+  switch(m->commutation_state){
     case 0:
-      set_manual_trigger();
-      //set_auto_timer0_trigger();
-      start_pwm(INH_A);
-      stop_pwm(INH_B);
-      stop_pwm(INH_C);
+      pwm_start(INH_A); //digitalWrite(INH_A, HIGH); //
+      pwm_stop(INH_B); //digitalWrite(INH_B, LOW); //
+      pwm_stop(INH_C); //digitalWrite(INH_C, LOW); //
       digitalWrite(INL_A, LOW);
       digitalWrite(INL_B, HIGH);
       digitalWrite(INL_C, LOW);
+      m->undriven_phase = 'C';
       break;
     case 1:
-      start_pwm(INH_A);
-      stop_pwm(INH_B);
-      stop_pwm(INH_C);
+      pwm_start(INH_A); //digitalWrite(INH_A, HIGH); //
+      pwm_stop(INH_B); //digitalWrite(INH_B, LOW); //
+      pwm_stop(INH_C); //digitalWrite(INH_C, LOW); //
       digitalWrite(INL_A, LOW);
       digitalWrite(INL_B, LOW);
       digitalWrite(INL_C, HIGH);
-      //set_manual_trigger();
-      set_auto_timer0_trigger();
+      m->undriven_phase = 'B';
       break;
     case 2:
-      set_manual_trigger();
-      //set_auto_timer0_trigger();
-      stop_pwm(INH_A);
-      start_pwm(INH_B);
-      stop_pwm(INH_C);
+      pwm_stop(INH_A);
+      pwm_start(INH_B);
+      pwm_stop(INH_C);
       digitalWrite(INL_A, LOW);
       digitalWrite(INL_B, LOW);
       digitalWrite(INL_C, HIGH);
+      m->undriven_phase = 'A';
       break;
     case 3:
-      set_manual_trigger();
-      //set_auto_timer0_trigger();
-      stop_pwm(INH_A);
-      start_pwm(INH_B);
-      stop_pwm(INH_C);
+      pwm_stop(INH_A);
+      pwm_start(INH_B);
+      pwm_stop(INH_C);
       digitalWrite(INL_A, HIGH);
       digitalWrite(INL_B, LOW);
       digitalWrite(INL_C, LOW);
+      m->undriven_phase = 'C';
       break;
     case 4:
-      stop_pwm(INH_A);
-      stop_pwm(INH_B);
-      start_pwm(INH_C);
+      pwm_stop(INH_A);
+      pwm_stop(INH_B);
+      pwm_start(INH_C);
       digitalWrite(INL_A, HIGH);
       digitalWrite(INL_B, LOW);
       digitalWrite(INL_C, LOW);
-      //set_manual_trigger();
-      set_auto_timer0_trigger();
+      m->undriven_phase = 'B';
       break;
     case 5:
-      set_manual_trigger();
-      //set_auto_timer0_trigger();
-      stop_pwm(INH_A);
-      stop_pwm(INH_B);
-      start_pwm(INH_C);
+      pwm_stop(INH_A);
+      pwm_stop(INH_B);
+      pwm_start(INH_C);
       digitalWrite(INL_A, LOW);
       digitalWrite(INL_B, HIGH);
       digitalWrite(INL_C, LOW);
+      m->undriven_phase = 'A';
      break;
   }
 }
