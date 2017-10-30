@@ -1,6 +1,6 @@
 #include "adc.h"
 
-byte current_adc_input;
+static byte current_adc_input;
 unsigned int adc_vals[NUM_ADC_INPUTS];
 byte new_adc_val;
 
@@ -16,10 +16,14 @@ void adc_setup(){
   ADCSRB = _BV(ADTS2);      //comparator disabled, auto-trigger source set to timer/counter0 overflow (but disabled in ADCSRA
   
   //The first conversion takes longer than normal, so trigger a conversion now
-  adc_trigger(current_adc_input);
+  adc_trigger(0);
   while (!(ADCSRA & _BV(ADIF))){ }  //wait until the ADIF bit is set
   ADCSRA &= ~_BV(ADIF);             //clear the ADIF bit
   ADCSRA |= _BV(ADIE);              //enable the interrupt now that the first conversion is finished
+}
+
+void adc_init(adc_t *a){
+  a->interrupt = 0;
 }
 
 /* Sets the ADC input channel-mux to 'channel'
@@ -54,6 +58,10 @@ void adc_disable_trigger(){
 
 void adc_clear_flag(){
   new_adc_val = 0;
+}
+
+void adc_check_interrupt(adc_t *a){
+  a->interrupt = new_adc_val;
 }
 
 /* ADC convers complete interrupt

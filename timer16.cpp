@@ -2,6 +2,7 @@
 
 static byte timer1a_flag;
 static byte timer1b_flag;
+static unsigned int timer1a_cnt;
 
 void timer16_setup(){
   TCCR1A = 0;   //no PWM, normal mode
@@ -22,6 +23,11 @@ void timer16_init(timer16_t *t, char which){
 /* Reset the counter to 0 */
 void timer16_reset(){
   TCNT1 = 0;
+}
+
+/* Calculates the time since timer=0 */
+float timer16_get_time(){
+  return((1.0*timer1a_cnt)/TIMER1_FREQ);
 }
 
 /* Must be called regularly to check if there was an interrupt */
@@ -76,6 +82,7 @@ void timer16_disable_interrupt(timer16_t *t){
 
 /* Just set the interrupt flag. nothing else. */
 ISR(TIMER1_COMPA_vect){
+  timer1a_cnt = TCNT1;
   timer1a_flag = 1;
   #ifdef DEBUG
   Serial.print("Timer1A Triggered at ");Serial.println(TCNT1);

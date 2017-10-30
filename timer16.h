@@ -12,6 +12,7 @@ typedef struct {
 void timer16_setup();
 void timer16_init(timer16_t *t, char which);
 void timer16_reset();
+float timer16_get_time();
 void timer16_check_interrupt(timer16_t *t);
 void timer16_clear_interrupt(timer16_t *t);
 void timer16_set_interrupt(timer16_t *t, unsigned int count);

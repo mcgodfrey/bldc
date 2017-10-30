@@ -1,7 +1,7 @@
 #ifndef FSM_H_
 #define FSM_H_
 
-#include "timer16.h"
+#include "configuration.h"
 #include "Arduino.h"
 
 typedef enum {
@@ -20,7 +20,7 @@ typedef enum {
 } state_t;
 
 
-typedef void (*state_fn)(void);
+typedef void (*state_fn)(config_t *);
 
 typedef enum {
   AUTO,
@@ -50,7 +50,7 @@ state_t transition_table2[][] = {
 
 
 
-event_t get_event(timer16_t *timer1a, timer16_t *timer1b);
+event_t get_event(config_t *c);
 state_t get_transition(transition_t transition_table[], byte num_rows, state_t state, event_t event);
 
 #endif //FSM_H_

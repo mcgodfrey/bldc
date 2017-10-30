@@ -5,7 +5,6 @@
 
 
 void motor_init(motor_t *m){
-  m->target_speed = 1;
   m->commutation_state = 0;
   m->direction = FORWARD;
   m->state = OFF;
@@ -13,13 +12,12 @@ void motor_init(motor_t *m){
 }
 
 
-void motor_start(motor_t *m, float speed){
+void motor_start(motor_t *m){
   //first stop the motor to turn everything off and get into a known state
   motor_stop(m);
   // And now set everything up to turn on
   m->state = ON;
   m->commutation_state = 0;
-  m->target_speed = speed;
   m->direction = FORWARD;
   digitalWrite(EN_GATE, HIGH);
 }
@@ -38,9 +36,9 @@ void motor_stop(motor_t *m){
 
 void motor_update_commutation(motor_t *m){
   m->commutation_state = (m->commutation_state+1)%6;
-  //#ifdef DEBUG
+  #ifdef DEBUG
   Serial.print("New commuation state = ");Serial.println(m->commutation_state);
-  //#endif
+  #endif
   switch(m->commutation_state){
     case 0:
       pwm_start(INH_A); //digitalWrite(INH_A, HIGH); //

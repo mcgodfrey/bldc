@@ -1,19 +1,25 @@
 #include "fsm.h"
-#include "timer16.h"
 #include "Arduino.h"
+#include "adc.h"
+#include "timer16.h"
+
 
 /*
  * Get the highest priority event
  * If nothing else, then return AUTO
  */
-event_t get_event(timer16_t *timer1a, timer16_t *timer1b){
-  timer16_check_interrupt(timer1a);
-  timer16_check_interrupt(timer1b);
-  if(timer1a->interrupt){
+event_t get_event(config_t *c){
+  timer16_check_interrupt(c->timer1a);
+  timer16_check_interrupt(c->timer1b);
+  adc_check_interrupt(c->adc);
+  if(c->timer1a->interrupt){
+    timer16_clear_interrupt(c->timer1a);
     return TIMER1A_INT;
-  } else if(timer1b->interrupt){
+  } else if(c->timer1b->interrupt){
+    timer16_clear_interrupt(c->timer1b);
     return TIMER1B_INT;
-  } else if(0){ //if there is a new adc value
+  } else if(c->adc->interrupt){
+    adc_clear_flag();
     return ADC_READY;
   } else {
     return AUTO;

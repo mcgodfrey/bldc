@@ -2,40 +2,34 @@
 #define CONSTANTS_H_
 
 //#define DEBUG
+#define RX_BUFFER_SIZE 32
+#define COMMAND_LEN 8
 
 //Timer1 settings
 #define SYSTEM_CLOCK_FREQ 16000000
-#define TIMER1_PRESCALER 256
+#define TIMER1_PRESCALER 8
 
 #if TIMER1_PRESCALER == 1
 #define TIMER1_PRESCALER_MASK (_BV(CS10))
-#define ADC_DELAY (2400)
-#define TIMER1_DELAY (10000)
 #elif TIMER1_PRESCALER == 8
 #define TIMER1_PRESCALER_MASK (_BV(CS11))
-#define ADC_DELAY (3b00)
-#define TIMER1_DELAY (1200)
 #elif TIMER1_PRESCALER == 64
 #define TIMER1_PRESCALER_MASK (_BV(CS11) | _BV(CS10))
-#define ADC_DELAY (38)
-#define TIMER1_DELAY (150)
 #elif TIMER1_PRESCALER == 256
 #define TIMER1_PRESCALER_MASK (_BV(CS12))
-#define ADC_DELAY (10)
-#define TIMER1_DELAY (44)
 #elif TIMER1_PRESCALER == 1024
 #define TIMER1_PRESCALER_MASK (_BV(CS12) | _BV(CS10))
-#define ADC_DELAY (3)
-#define TIMER1_DELAY (15)
 #endif
 
 #define TIMER1_FREQ ((unsigned long)((SYSTEM_CLOCK_FREQ)/(TIMER1_PRESCALER)))
-#define TIMER1_MAX 65535
+#define TIMER1_MAX 60000
 
 
 ///////////////////////////////////////////////////////
 //ADC
 
+//ADC noise delay [us]
+#define ADC_DELAY 100
 //ADC clock prescaler
 #define ADC_PRESCALER 16
 #define ADC_FREQUENCY ((unsigned long)(SYSTEM_CLOCK_FREQ/ADC_PRESCALER))

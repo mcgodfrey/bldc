@@ -14,7 +14,6 @@ typedef enum {
 } motor_state_t;
 
 typedef struct {
-  float target_speed;
   byte commutation_state;
   direction_t direction;
   motor_state_t state;
@@ -23,7 +22,7 @@ typedef struct {
 
 
 void motor_init(motor_t *m);
-void motor_start(motor_t *m, float speed);
+void motor_start(motor_t *m);
 void motor_stop(motor_t *m);
 void motor_update_commutation(motor_t *m);
 
